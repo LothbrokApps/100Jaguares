@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>100 Jaguares Dijeron - Sistema Premium</title>
+  <title>100 Jaguares Dijeron - Unifreire</title>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     /* =========================================================
@@ -175,8 +175,8 @@
   <!-- PANTALLA INICIO -->
   <div class="role-picker" id="role-selector">
     <img src="logo.png" alt="UniFreire Logo" onerror="this.style.display='none'">
-    <h1>SISTEMA PREMIUM</h1>
-    <h3>100 Jaguares Dijeron</h3>
+    <h1>100 Jaguares Dijeron</h1>
+    <h3>Marketing Unifreire 2026</h3>
     <button class="role-btn btn-projector" onclick="initRole('projector')">Lanzar Proyector Público</button>
     <button class="role-btn btn-admin" onclick="initRole('admin')">Ingresar a Cabina de Control</button>
   </div>
@@ -227,7 +227,6 @@
         <div class="sidebar-brand"><img src="logo.png" alt="UniFreire Logo" onerror="this.style.display='none'"></div>
         <ul class="nav-menu">
           <li class="nav-item active" id="nav-normal" onclick="switchAdminTab('normal')">Tablero Principal</li>
-          <li class="nav-item" id="nav-fm" onclick="switchAdminTab('fm')">Ronda Jaguar</li>
         </ul>
         <div class="btn-restart" onclick="resetGame()">🔄 Reiniciar Juego</div>
       </aside>
@@ -236,7 +235,7 @@
       <main class="main-content">
         <header class="topbar">
           <h2 id="admin-header-title">Tablero Principal</h2>
-          <div class="user-profile"><div class="user-avatar">M</div> Moderador Pro</div>
+          <div class="user-profile"><div class="user-avatar">M</div> Marketing 2026</div>
         </header>
 
         <!-- TAB: NORMAL -->
@@ -612,7 +611,8 @@
 
     function switchAdminTab(tab) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      document.getElementById(`nav-${tab}`).classList.add('active');
+      const navEl = document.getElementById(`nav-${tab}`);
+      if (navEl) navEl.classList.add('active');
       if(tab === 'normal') {
         document.getElementById('tab-normal').style.display = 'flex'; document.getElementById('tab-fm').style.display = 'none';
         document.getElementById('admin-header-title').innerText = "Tablero Principal";
