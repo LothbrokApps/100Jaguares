@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>100 Jaguares Dijeron - Sistema Premium</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    /* =========================================================
+       VARIABLES PREMIUM DARK MODE
+       ========================================================= */
+    :root {
+      --bg-base: #0B0E14;
+      --bg-card: #151A22;
+      --bg-input: #1C222B;
+      --text-main: #FFFFFF;
+      --text-muted: #8E9BAE;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      
+      --gold: #F0C419;
+      --gold-glow: rgba(240, 196, 25, 0.3);
+      --neon-green: #2ecc71;
+      --danger: #FF4757;
+      
+      --radius-card: 24px;
+      --radius-btn: 12px;
+      --radius-pill: 50px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
+    
+    /* ======== PANTALLA INICIO ======== */
+    .role-picker {
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      height: 100vh; gap: 25px; background: var(--bg-base); color: var(--text-main);
+    }
+    .role-picker img { width: 220px; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.1)); }
+    .role-picker h1 { font-size: 3rem; color: var(--text-main); text-align: center; line-height: 1.1; margin-bottom: 0; letter-spacing: -1px; }
+    .role-picker h3 { color: var(--gold); font-weight: 500; margin-bottom: 30px; letter-spacing: 3px; text-transform: uppercase; font-size: 0.9rem; }
+    .role-btn {
+      padding: 16px 40px; font-size: 1.1rem; border: none; border-radius: var(--radius-pill);
+      cursor: pointer; font-weight: 600; width: 350px;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .role-btn:hover { transform: translateY(-3px); }
+    .btn-projector { background: var(--gold); color: #000; box-shadow: 0 10px 30px var(--gold-glow); }
+    .btn-admin { background: transparent; color: var(--text-main); border: 2px solid var(--border-subtle); }
+    .btn-admin:hover { background: var(--bg-card); border-color: var(--text-muted); }
+
+    /* ======== PANTALLAS DEL PROYECTOR ======== */
+    .view-projector-base {
+      display: none; width: 1920px; height: 1080px;
+      background-image: url('bg_plantilla.png'); background-size: 1920px 1080px; background-repeat: no-repeat;
+      position: absolute; transform-origin: top left; overflow: hidden;
+      font-family: 'Arial Black', sans-serif; color: #FFF;
+    }
+    
+    /* Posiciones Absolutas (Basado en la Plantilla 1920x1080) */
+    .proj-team-name { position: absolute; top: 100px; width: 440px; text-align: center; font-size: 2.2rem; color: #FFF; text-transform: uppercase; font-style: italic; font-weight: 900; background: transparent; text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(240,196,25,0.6), 0 0 30px rgba(240,196,25,0.6); }
+    #proj-t0-name { left: 40px; }
+    #proj-t1-name { left: 1440px; }
+
+    .proj-score { position: absolute; top: 155px; width: 440px; height: 210px; display: flex; align-items: center; justify-content: center; font-size: 8rem; color: #FFF; font-style: italic; font-weight: 900; text-shadow: 4px 4px 15px rgba(0,0,0,0.6); }
+    #proj-p0 { left: 40px; }
+    #proj-p1 { left: 1440px; }
+
+    .proj-strikes { position: absolute; top: 318px; width: 440px; text-align: center; font-size: 3rem; color: var(--danger); letter-spacing: 15px; font-weight: 900; text-shadow: 0 0 15px rgba(255,71,87,0.8); }
+    #proj-s0 { left: 40px; }
+    #proj-s1 { left: 1440px; }
+
+    #proj-round-num { position: absolute; left: 890px; top: 164px; width: 345px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #000; font-style: italic; font-weight: 900; }
+    #proj-pot { position: absolute; left: 890px; top: 213px; width: 345px; height: 140px; display: flex; align-items: center; justify-content: center; font-size: 6rem; color: #FFF; font-style: italic; font-weight: 900; text-shadow: 4px 4px 15px rgba(0,0,0,0.6); }
+    
+    #proj-question { position: absolute; left: 295px; top: 445px; width: 1330px; height: 95px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; text-align: center; text-transform: uppercase; font-style: italic; font-weight: 900; text-shadow: 2px 2px 5px rgba(0,0,0,0.8); }
+
+    /* Tarjetas 3D Proyector */
+    .card-scene { position: absolute; width: 865px; height: 110px; perspective: 1200px; }
+    #slot-0 { left: 65px; top: 590px; }
+    #slot-1 { left: 985px; top: 590px; }
+    #slot-2 { left: 65px; top: 735px; }
+    #slot-3 { left: 985px; top: 735px; }
+    #slot-4 { left: 65px; top: 880px; }
+
+    .card-flipper { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d; }
+    .card-flipper.flipped { transform: rotateX(-180deg); }
+    .card-front, .card-back {
+      width: 100%; height: 100%; position: absolute; backface-visibility: hidden;
+      display: flex; align-items: center; justify-content: center; 
+      border-radius: 15px; font-size: 4rem; font-style: italic; font-weight: 900;
+    }
+    .card-front { background: transparent; color: #FFF; text-shadow: 3px 3px 10px rgba(0,0,0,0.8); }
+    .card-number { background: #0F3D34; border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 2.8rem; border: 3px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.6); }
+    .card-back {
+      background: #023625; border: 3px solid #F0C419; color: #FFF;
+      transform: rotateX(180deg); justify-content: space-between;
+      padding: 0 30px; font-size: 2.5rem; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    }
+    .card-points { font-size: 3.5rem; color: #F0C419; font-weight: 900; }
+
+    /* Fast Money Overlay */
+    .fm-cover { position: absolute; left: 50px; top: 450px; width: 1820px; height: 600px; background: rgba(15, 61, 52, 0.95); border-radius: 20px; border: 3px solid var(--gold); padding: 30px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, 1fr); gap: 15px 40px; }
+    .fm-header-pot { position: absolute; left: 890px; top: 213px; width: 345px; height: 140px; display: flex; align-items: center; justify-content: center; font-size: 6rem; color: var(--gold); font-style: italic; font-weight: 900; text-shadow: 4px 4px 15px rgba(0,0,0,0.6); }
+    .fm-header-timer { position: absolute; left: 295px; top: 445px; width: 1330px; height: 95px; display: flex; align-items: center; justify-content: center; font-size: 4rem; color: #FFF; font-style: italic; font-weight: 900; text-shadow: 4px 4px 15px rgba(0,0,0,0.6); z-index: 10; }
+
+    /* Overlays Strikes */
+    .strike-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 61, 52, 0.95); display: none; justify-content: center; align-items: center; z-index: 200; }
+    .strike-box { display: flex; gap: 40px; }
+    .strike-x { color: var(--danger); font-size: 25rem; font-family: 'Arial Black'; text-shadow: 0 0 80px rgba(255,71,87,0.9); animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    @keyframes pop { 0% { transform: scale(0.3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+    /* ======== DASHBOARD ADMINISTRADOR ======== */
+    #view-admin { display: none; height: 100vh; width: 100vw; background: var(--bg-base); color: var(--text-main); overflow: hidden; }
+    .admin-layout { display: flex; width: 100%; height: 100%; }
+    
+    .sidebar { width: 260px; background: var(--bg-card); display: flex; flex-direction: column; z-index: 20; border-right: 1px solid var(--border-subtle); padding: 20px 15px; }
+    .sidebar-brand { display: flex; align-items: center; justify-content: center; margin-bottom: 40px; }
+    .sidebar-brand img { width: 130px; filter: drop-shadow(0 2px 10px rgba(255,255,255,0.05)); }
+    
+    .nav-menu { list-style: none; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .nav-item { padding: 14px 20px; font-size: 0.95rem; cursor: pointer; border-radius: var(--radius-pill); transition: 0.3s; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 12px; }
+    .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--text-main); }
+    .nav-item.active { background: var(--gold); color: #000; font-weight: 700; box-shadow: 0 4px 15px var(--gold-glow); }
+    
+    .btn-restart { background: rgba(255,71,87,0.1); color: var(--danger); border: 1px solid rgba(255,71,87,0.3); padding: 12px; border-radius: var(--radius-pill); text-align: center; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: auto; }
+    .btn-restart:hover { background: var(--danger); color: #FFF; box-shadow: 0 4px 15px rgba(255,71,87,0.3); }
+
+    .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .topbar { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; height: 80px; }
+    .topbar h2 { margin: 0; font-size: 1.5rem; font-weight: 600; color: var(--text-main); letter-spacing: -0.5px; }
+    .user-profile { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text-main); background: var(--bg-card); padding: 8px 16px; border-radius: var(--radius-pill); font-size: 0.85rem; border: 1px solid var(--border-subtle); }
+    .user-avatar { width: 28px; height: 28px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; }
+    
+    .dashboard-container { flex: 1; padding: 0 40px 30px 40px; display: flex; flex-direction: column; overflow: hidden; }
+    .grid-3-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 25px; height: 100%; overflow: hidden; }
+    
+    .card { background: var(--bg-card); border-radius: var(--radius-card); padding: 25px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-subtle); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .card h3 { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; font-weight: 600; }
+    
+    .team-input-group { background: var(--bg-input); padding: 20px; border-radius: 16px; border: 1px solid var(--border-subtle); display: flex; flex-direction: column; align-items: center; transition: 0.3s; margin-bottom: 15px; }
+    .team-input-group input { text-align: center; font-size: 1.2rem; font-weight: 700; background: transparent; border: none; color: var(--text-main); margin-bottom: 15px; border-bottom: 2px solid transparent; border-radius: 0; padding: 0; }
+    .score-display { font-size: 3.5rem; font-weight: 800; color: var(--gold); line-height: 1; margin-bottom: 20px; text-shadow: 0 0 20px var(--gold-glow); }
+    
+    .btn { padding: 12px 20px; border-radius: var(--radius-pill); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: 0.2s; border: none; display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--gold); color: #000; }
+    .btn-primary:hover { filter: brightness(1.1); box-shadow: 0 5px 15px var(--gold-glow); }
+    .btn-success { background: var(--neon-green); color: #000; }
+    .btn-danger-outline { background: transparent; border: 1px solid rgba(255,71,87,0.5); color: var(--danger); }
+    .btn-danger-solid { background: var(--danger); color: #FFF; }
+    .btn-secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-subtle); }
+
+    input[type="text"], select { width: 100%; padding: 12px 16px; border-radius: var(--radius-btn); border: 1px solid var(--border-subtle); background: var(--bg-input); color: var(--text-main); font-size: 0.9rem; transition: 0.2s; }
+    input:focus, select:focus { outline: none; border-color: var(--gold); }
+
+    .q-title-display { font-size: 1.1rem; font-weight: 600; color: var(--text-main); line-height: 1.4; margin: 15px 0 20px 0; padding: 15px; background: var(--bg-input); border-radius: 12px; border-left: 4px solid var(--gold); }
+    .ans-row-admin { display: flex; justify-content: space-between; align-items: center; background: var(--bg-input); padding: 12px 18px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 10px; border: 1px solid var(--border-subtle); transition: 0.2s; }
+
+    /* MODO DINERO RAPIDO (FM) */
+    #tab-fm { display: none; flex-direction: column; gap: 20px; height: 100%; }
+    .fm-controls-card { padding: 15px 25px; flex-direction: row; justify-content: space-between; align-items: center; border-radius: var(--radius-pill); }
+    .fm-grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; flex: 1; overflow: hidden; }
+    .fm-question-label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; letter-spacing: 0.5px; }
+    .fm-row { display: flex; gap: 8px; align-items: center; margin-bottom: 20px; background: var(--bg-input); padding: 12px; border-radius: 16px; border: 1px solid var(--border-subtle); }
+    .fm-row input[type="text"] { flex: 1; background: transparent; border: none; padding: 5px; font-size: 0.95rem; }
+    .fm-row select { width: 70px; padding: 8px; font-weight: bold; text-align: center; border-radius: 8px; cursor: pointer; }
+    
+    /* MONITOR DE ESPEJO (PiP) */
+    .mirror-container { width: 100%; aspect-ratio: 16/9; position: relative; overflow: hidden; border-radius: 12px; border: 2px solid var(--gold); pointer-events: none; background: #000; margin-top: auto; }
+    .mirror-frame { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: none; transform-origin: top left; }
+
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA INICIO -->
+  <div class="role-picker" id="role-selector">
+    <img src="logo.png" alt="UniFreire Logo" onerror="this.style.display='none'">
+    <h1>SISTEMA PREMIUM</h1>
+    <h3>100 Jaguares Dijeron</h3>
+    <button class="role-btn btn-projector" onclick="initRole('projector')">Lanzar Proyector Público</button>
+    <button class="role-btn btn-admin" onclick="initRole('admin')">Ingresar a Cabina de Control</button>
+  </div>
+
+  <!-- PROYECTOR: TABLERO NORMAL -->
+  <div id="view-projector" class="view-projector-base">
+    <div class="proj-team-name" id="proj-t0-name">EQUIPO 1</div>
+    <div class="proj-score" id="proj-p0">0</div>
+    <div class="proj-strikes" id="proj-s0"></div>
+
+    <div id="proj-round-num">LISTOS</div>
+    <div id="proj-pot">0</div>
+
+    <div class="proj-team-name" id="proj-t1-name">EQUIPO 2</div>
+    <div class="proj-score" id="proj-p1">0</div>
+    <div class="proj-strikes" id="proj-s1"></div>
+
+    <div id="proj-question">¡BIENVENIDOS AL JUEGO!</div>
+    
+    <div id="proj-board"></div>
+  </div>
+
+  <!-- PROYECTOR: RONDA JAGUAR -->
+  <div id="view-projector-fm" class="view-projector-base">
+    <div class="proj-team-name" id="fm-t0-name">EQUIPO 1</div>
+    <div class="proj-score" id="fm-p0">0</div>
+
+    <div id="fm-round-num" style="position: absolute; left: 890px; top: 164px; width: 345px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #000; font-style: italic; font-weight: 900;">JAGUAR</div>
+    <div class="fm-header-pot" id="fm-proj-total">0</div>
+
+    <div class="proj-team-name" id="fm-t1-name">EQUIPO 2</div>
+    <div class="proj-score" id="fm-p1">0</div>
+
+    <div class="fm-header-timer" id="fm-proj-timer">25</div>
+
+    <div class="fm-cover" id="proj-fm-board"></div>
+  </div>
+
+  <div class="strike-overlay" id="proj-strikes">
+    <div class="strike-box" id="strike-container"></div>
+  </div>
+
+  <!-- DASHBOARD ADMINISTRADOR -->
+  <div id="view-admin">
+    <div class="admin-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-brand"><img src="logo.png" alt="UniFreire Logo" onerror="this.style.display='none'"></div>
+        <ul class="nav-menu">
+          <li class="nav-item active" id="nav-normal" onclick="switchAdminTab('normal')">Tablero Principal</li>
+          <li class="nav-item" id="nav-fm" onclick="switchAdminTab('fm')">Ronda Jaguar</li>
+        </ul>
+        <div class="btn-restart" onclick="resetGame()">🔄 Reiniciar Juego</div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <header class="topbar">
+          <h2 id="admin-header-title">Tablero Principal</h2>
+          <div class="user-profile"><div class="user-avatar">M</div> Moderador Pro</div>
+        </header>
+
+        <!-- TAB: NORMAL -->
+        <div class="dashboard-container" id="tab-normal">
+          <div class="grid-3-col">
+            
+            <!-- Columna 1: Equipos -->
+            <div class="card">
+              <h3>Marcador Global</h3>
+              <div style="flex:1; display:flex; flex-direction:column; overflow-y:auto; padding-right:5px;">
+                
+                <div class="team-input-group">
+                  <input type="text" id="admin-t0-input" value="EQUIPO 1" oninput="updateTeamNames()">
+                  <div class="score-display" id="admin-score-0">0</div>
+                  <div style="display:flex; gap:10px; margin-bottom: 15px; width: 100%;">
+                    <button class="btn btn-secondary" style="flex:1;" onclick="addTeamStrike(0)">+ Strike (X)</button>
+                    <button class="btn btn-secondary" style="flex:1;" onclick="clearTeamStrike(0)">- Quitar</button>
+                  </div>
+                  <button class="btn btn-danger-outline" style="width:100%;" onclick="clearScore(0)">Reset Puntos</button>
+                </div>
+
+                <div class="team-input-group">
+                  <input type="text" id="admin-t1-input" value="EQUIPO 2" oninput="updateTeamNames()">
+                  <div class="score-display" id="admin-score-1">0</div>
+                  <div style="display:flex; gap:10px; margin-bottom: 15px; width: 100%;">
+                    <button class="btn btn-secondary" style="flex:1;" onclick="addTeamStrike(1)">+ Strike (X)</button>
+                    <button class="btn btn-secondary" style="flex:1;" onclick="clearTeamStrike(1)">- Quitar</button>
+                  </div>
+                  <button class="btn btn-danger-outline" style="width:100%;" onclick="clearScore(1)">Reset Puntos</button>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Columna 2: Preguntas -->
+            <div class="card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; gap:8px;">
+                <h3 style="margin-bottom:0;">Banco de Preguntas</h3>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.8rem;" onclick="loadRandom()">Aleatoria 🎲</button>
+                  <button class="btn btn-secondary" id="btn-end-round" style="padding: 6px 12px; font-size:0.8rem;" onclick="toggleEndRound()">🏁 Fin de Ronda</button>
+                </div>
+              </div>
+              
+              <select id="admin-select" onchange="loadRound(this.value)" style="margin-bottom:5px;"></select>
+              <div class="q-title-display" id="admin-q-title">Selecciona una ronda...</div>
+              <div id="admin-answers" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; padding-right:5px; gap:5px;"></div>
+            </div>
+
+            <!-- Columna 3: Controles y PiP -->
+            <div class="card" style="justify-content: space-between;">
+              <div>
+                <h3>Penalización de Pantalla (Global)</h3>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                  <button class="btn btn-danger-solid" style="flex:1;" onclick="sendStrikes(1)">1 ❌</button>
+                  <button class="btn btn-danger-solid" style="flex:1;" onclick="sendStrikes(2)">2 ❌</button>
+                  <button class="btn btn-danger-solid" style="flex:1;" onclick="sendStrikes(3)">3 ❌</button>
+                </div>
+                
+                <h3>Otorgar Puntos de Ronda</h3>
+                <div style="display:flex; gap:10px;">
+                  <button class="btn btn-success" style="flex:1;" onclick="assignPoints(0)"><span id="btn-t0-name">EQ 1</span></button>
+                  <button class="btn btn-success" style="flex:1;" onclick="assignPoints(1)"><span id="btn-t1-name">EQ 2</span></button>
+                </div>
+              </div>
+              
+              <!-- Monitor de Espejo PiP -->
+              <h3 style="margin-top: 20px; margin-bottom: 5px;">Monitor de Espejo (Live)</h3>
+              <div class="mirror-container" id="mirror-container-n">
+                <iframe class="mirror-frame" id="mirror-frame-n" src=""></iframe>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TAB: RONDA JAGUAR (FAST MONEY) -->
+        <div class="dashboard-container" id="tab-fm">
+          
+          <div class="card fm-controls-card" id="fm-setup-card">
+            <div>
+              <h3 style="margin-bottom:8px;">Generar Ronda Jaguar (Doble Matemático)</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted);">El sistema usará los puntos del equipo y generará una bolsa exacta para duplicarlos.</p>
+            </div>
+            <div style="display:flex; gap:15px;">
+              <button class="btn btn-primary" onclick="initFastMoney(0)">Generar para <span id="fm-btn-t0">EQ 1</span></button>
+              <button class="btn btn-primary" onclick="initFastMoney(1)">Generar para <span id="fm-btn-t1">EQ 2</span></button>
+            </div>
+          </div>
+
+          <div id="fm-play-cards" style="display:none; flex-direction:column; height:100%; gap:20px; overflow:hidden;">
+            
+            <div class="card fm-controls-card">
+              <div style="display:flex; gap:15px; align-items:center;">
+                <button class="btn btn-secondary" onclick="startFMTimer(20)">⏳ 20s</button>
+                <button class="btn btn-secondary" onclick="startFMTimer(25)">⏳ 25s</button>
+                <button class="btn btn-danger-outline" onclick="stopFMTimer()">⏹ Pausar</button>
+                <button class="btn btn-danger-solid" onclick="buzzFMTimer()">🔔 Chicharra</button>
+              </div>
+              <div style="display:flex; gap:15px; align-items:center;">
+                <button class="btn btn-secondary" onclick="hideFMBoard()">👁 Ocultar J1</button>
+                <button class="btn btn-success" onclick="showFMBoard()">👁 Revelar J1</button>
+              </div>
+            </div>
+
+            <div class="fm-grid-2-col">
+              <!-- Jugador 1 -->
+              <div class="card" style="overflow-y:auto; padding-right:10px;">
+                <h3 style="color:var(--neon-green);">Jugador 1</h3>
+                <div id="admin-fm-p1" style="display:flex; flex-direction:column;"></div>
+              </div>
+              <!-- Jugador 2 con PiP Monitor Integrado al fondo -->
+              <div class="card" style="overflow-y:auto; padding-right:10px;">
+                <h3 style="color:var(--neon-green);">Jugador 2</h3>
+                <div id="admin-fm-p2" style="display:flex; flex-direction:column; margin-bottom: 20px;"></div>
+                
+                <h3 style="margin-top: auto; margin-bottom: 5px;">Monitor de Espejo</h3>
+                <div class="mirror-container" id="mirror-container-fm">
+                  <iframe class="mirror-frame" id="mirror-frame-fm" src=""></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // AUTO-LAUNCH PROJECTOR HASH
+    window.onload = () => {
+      if(window.location.hash === '#projector') {
+        initRole('projector');
+      }
+      scaleProjector();
+    };
+
+    function scaleProjector() {
+      const proj = document.querySelectorAll('.view-projector-base');
+      const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      proj.forEach(p => {
+        p.style.transform = `scale(${scale})`;
+        const leftOffset = (window.innerWidth - (1920 * scale)) / 2;
+        const topOffset = (window.innerHeight - (1080 * scale)) / 2;
+        p.style.left = `${leftOffset}px`;
+        p.style.top = `${topOffset}px`;
+      });
+    }
+    window.addEventListener('resize', scaleProjector);
+
+    const channel = new BroadcastChannel("100_jaguares_engine");
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playTone(freqs, type, duration) {
+      if (!audioCtx) audioCtx = new AudioCtx();
+      const now = audioCtx.currentTime;
+      freqs.forEach((f, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(f, now + i * 0.08);
+        gain.gain.setValueAtTime(0.3, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.08);
+        osc.stop(now + i * 0.08 + duration);
+      });
+    }
+    const soundSuccess = () => playTone([523, 659, 783], 'sine', 0.4);
+    const soundWrong = () => playTone([130, 110], 'sawtooth', 0.6);
+    const soundTick = () => playTone([1000], 'sine', 0.05);
+
+    function triggerConfetti() {
+      if(window.confetti) confetti({ particleCount: 150, spread: 90, origin: { y: 0.7 }, colors: ['#2ecc71', '#f1c40f', '#E6C25A', '#ffffff'] });
+    }
+
+    // ==========================================
+    // BASE DE PREGUNTAS REALES EXTENDIDA (50 Normales, 50 FM)
+    // ==========================================
+    const curatedNormal = [
+      /* CULTURA POP */
+      { p: "Canción en español que todos cantan a gritos en las fiestas", a: [["La Chona", 38], ["Sálvame (RBD)", 26], ["Tusa", 18], ["Amor Prohibido", 11], ["El Sol No Regresa", 7]] },
+      { p: "Algo indispensable para convertirte en un influencer exitoso", a: [["Celular con buena cámara", 36], ["Carisma / Buena vibra", 26], ["Polémicas / Chismes", 18], ["Aro de luz", 12], ["Bailes de TikTok", 8]] },
+      { p: "Plataforma o app que revisas primero al despertar", a: [["WhatsApp", 40], ["Instagram", 28], ["TikTok", 18], ["X / Twitter", 8], ["YouTube", 6]] },
+      { p: "Cantante pop o reggaetón latino más escuchado en los últimos años", a: [["Bad Bunny", 42], ["Peso Pluma", 24], ["Karol G", 18], ["Shakira", 10], ["Rauw Alejandro", 6]] },
+      { p: "Meme clásico mexicano que nunca pasa de moda", a: [["\"Ah caray, soy yo\"", 34], ["\"O sea qué pedo\"", 26], ["\"Se tenía que decir y se dijo\"", 19], ["\"No lo sé Rick, parece falso\"", 13], ["El Ferras", 8]] },
+      { p: "Concierto o festival musical al que sueñan con ir los jóvenes", a: [["Corona Capital", 35], ["Pa'l Norte", 27], ["EDC México", 20], ["Vive Latino", 11], ["Coachella", 7]] },
+      { p: "Marca de ropa o tenis urbana favorita de la juventud", a: [["Nike", 40], ["Adidas", 26], ["Jordan", 18], ["Vans", 10], ["Zara", 6]] },
+      { p: "Celebridad o figura pública mexicana que siempre da de qué hablar", a: [["Wendy Guevara", 36], ["Eugenio Derbez", 25], ["Luisito Comunica", 19], ["Belinda", 12], ["Christian Nodal", 8]] },
+
+      /* PELÍCULAS */
+      { p: "Película animada que incluso los adultos aman con todo el corazón", a: [["Shrek", 42], ["Toy Story", 25], ["Ratatouille", 16], ["Monsters Inc.", 10], ["Los Increíbles", 7]] },
+      { p: "Villano legendario del cine que todos recuerdan con miedo o admiración", a: [["El Joker / Guasón", 40], ["Darth Vader", 26], ["Thanos", 18], ["Lord Voldemort", 10], ["Hannibal Lecter", 6]] },
+      { p: "Película romántica que ves cuando tienes el corazón roto", a: [["500 días con ella", 36], ["Diario de una pasión", 27], ["Titanic", 18], ["La La Land", 12], ["Comer, rezar, amar", 7]] },
+      { p: "Saga o franquicia de películas más maratoneada en un fin de semana", a: [["Harry Potter", 38], ["Star Wars", 25], ["El Señor de los Anillos", 18], ["Rápidos y Furiosos", 12], ["Crepúsculo", 7]] },
+      { p: "Superhéroe con las películas más taquilleras y queridas de la historia", a: [["Spider-Man", 42], ["Batman", 24], ["Iron Man", 18], ["Capitán América", 10], ["Superman", 6]] },
+      { p: "Película mexicana moderna más famosa y querida por el público", a: [["Amores Perros", 35], ["Nosotros los Nobles", 28], ["No se aceptan devoluciones", 19], ["Y tu mamá también", 11], ["Roma", 7]] },
+      { p: "Cosa típica que te molesta de alguien en la sala de cine", a: [["Que use el cel con brillo", 38], ["Que hable en la función", 28], ["Que patee el asiento", 18], ["Que haga ruido al comer", 10], ["Que traiga bebés llorando", 6]] },
+      { p: "Película de terror que de verdad no te deja dormir por la noche", a: [["El Conjuro", 38], ["El Exorcista", 26], ["Eso (It)", 18], ["Actividad Paranormal", 11], ["La Noche del Demonio", 7]] },
+
+      /* SERIES Y STREAMING */
+      { p: "Serie de comedia que la gente repite y ve mil veces sin cansarse", a: [["Friends", 38], ["The Office", 27], ["Malcolm el de en medio", 19], ["How I Met Your Mother", 10], ["Brooklyn Nine-Nine", 6]] },
+      { p: "Telenovela mexicana icónica que todos han visto al menos una escena", a: [["María la del Barrio", 36], ["Rebelde", 28], ["La Usurpadora", 18], ["Teresa", 11], ["Rubí", 7]] },
+      { p: "Serie de drama o suspenso más adictiva de los últimos tiempos", a: [["Breaking Bad", 40], ["Peaky Blinders", 24], ["Stranger Things", 18], ["Euphoria", 11], ["Dark", 7]] },
+      { p: "Serie animada para adultos más vista y citada en el mundo", a: [["Los Simpson", 42], ["Rick y Morty", 26], ["Padre de Familia", 16], ["BoJack Horseman", 10], ["South Park", 6]] },
+      { p: "Razón más común por la que cancelas tus planes para quedarte en casa", a: [["Estrenaron nueva temporada", 36], ["Cansancio extremo acumulado", 28], ["No tener dinero para gastar", 19], ["Clima lluvioso o frío", 11], ["Flojera de arreglarse", 6]] },
+      { p: "Personaje de serie que todo el público odia con pasión", a: [["Joffrey Baratheon (GoT)", 38], ["Arturo Román (Casa Papel)", 26], ["Skyler White (Breaking Bad)", 18], ["Vecna (Stranger Things)", 11], ["Ramsay Bolton (GoT)", 7]] },
+      { p: "Reality show mexicano que paralizó las redes sociales y la televisión", a: [["La Casa de los Famosos", 45], ["Exatlón México", 23], ["MasterChef México", 16], ["La Academia", 10], ["Shark Tank México", 6]] },
+      { p: "Pretexto que das cuando alguien te pide tu cuenta de streaming", a: [["\"Ya están las pantallas llenas\"", 40], ["\"Es cuenta de un familiar\"", 26], ["\"Cobran extra por compartir\"", 18], ["\"No recuerdo la clave\"", 11], ["\"Se me olvidó pagar el mes\"", 5]] },
+
+      /* EVENTOS SOCIALES ESTUDIANTILES */
+      { p: "Lo más esperado en una fiesta de graduación universitaria", a: [["Brindis y lanzar birrete", 36], ["Cena y barra libre", 26], ["Baile y grupo en vivo", 20], ["Foto oficial con toga", 11], ["El after party al amanecer", 7]] },
+      { p: "Tragedia típica que ocurre en una fiesta de fin de semestre", a: [["Alguien pierde el celular", 36], ["Se acaba el hielo y bebidas", 25], ["Llega la policía por el ruido", 20], ["Amigos peleando borrachos", 12], ["El anfitrión se queda dormido", 7]] },
+      { p: "Tradición o actividad clásica en la semana del estudiante", a: [["Torneo de fútbol/vóley", 35], ["Concurso de disfraces", 26], ["Convivio / Carnita asada", 20], ["Elección de reina o rey", 12], ["Rally de novatadas", 7]] },
+      { p: "Lo peor que te puede pasar en una presentación escolar frente a todos", a: [["Olvidar lo que ibas a decir", 40], ["Que falle el proyector o USB", 26], ["Pregunta difícil del profe", 18], ["Ataque de risa o nervios", 10], ["Tirar el material de apoyo", 6]] },
+      { p: "Algo que siempre se organiza en el salón para recaudar fondos", a: [["Venta de brownies / postres", 38], ["Rifa de botella o dinero", 26], ["Venta de flores/San Valentín", 18], ["Lavado de autos exprés", 11], ["Cooperacha obligatoria", 7]] },
+      { p: "Personaje infaltable en todo grupo de amigos de la universidad", a: [["El que no va pero pasa", 36], ["El matado con los apuntes", 27], ["El que siempre tiene hambre", 19], ["El fiestero organizador", 12], ["El impuntual que llega tarde", 6]] },
+      { p: "Lo que más se critica después de un baile o fiesta estudiantil", a: [["La música del DJ", 38], ["La comida o botana fría", 25], ["Lo caro de la entrada", 19], ["Cómo iban vestidos todos", 12], ["El calor o falta de aire", 6]] },
+      { p: "Lo primero que hacen los estudiantes al terminar la última semana de exámenes", a: [["Irse de fiesta o al bar", 42], ["Dormir 15 horas seguidas", 26], ["Tirar o archivar apuntes", 16], ["Ver series sin culpa", 10], ["Planear viaje de vacaciones", 6]] },
+
+      /* SOCIALES Y VIDA COTIDIANA */
+      { p: "Mentira típica que dices cuando te invitan a salir y no quieres ir", a: [["\"Me siento mal del estómago\"", 38], ["\"Tengo compromiso familiar\"", 27], ["\"Ando cansado del trabajo\"", 18], ["\"No me cayó la quincena\"", 11], ["\"Mis papás no me dejaron\"", 6]] },
+      { p: "Lugar favorito para una primera cita que sea bonita y no costosa", a: [["Tomar un café tranquilo", 38], ["Caminar en parque o plaza", 26], ["Ir por unos tacos de noche", 19], ["Ir por una nieve o helado", 11], ["Ver el atardecer en mirador", 6]] },
+      { p: "Razón por la que revisas el perfil de alguien a escondidas (stalkear)", a: [["Saber con quién anda", 40], ["Ver fotos de su pasado", 25], ["Ver si aún tiene a su ex", 18], ["Investigar qué hace o trabaja", 11], ["Comparar estilos de vida", 6]] },
+      { p: "Algo que arruina por completo una reunión tranquila entre amigos", a: [["El amigo mala copa", 40], ["Que todos vean su celular", 26], ["Hablar de política/religión", 16], ["Llevar a alguien antipático", 11], ["Música insoportable y alta", 7]] },
+      { p: "Regalo clásico de intercambio navideño que nadie quiere recibir", a: [["Taza con dulces baratos", 38], ["Calcetines o bufanda", 26], ["Jabones aromáticos o velas", 18], ["Alcancía o adorno genérico", 11], ["Libreta de notas escolar", 7]] },
+      { p: "Mensaje de WhatsApp que te da taquicardia cuando lo recibes", a: [["\"Tenemos que hablar\"", 45], ["\"¿Dónde estás? Urge\"", 24], ["\"¿Ya viste lo que subieron?\"", 16], ["\"Llama urgente, pasó algo\"", 10], ["Captura sin explicación", 5]] },
+      { p: "Cosa que haces en una fiesta donde no conoces a casi nadie", a: [["Pegarte a quien conoces", 42], ["Fingir mensajear en el cel", 27], ["Ir por comida/bebida", 16], ["Acariciar a la mascota", 9], ["Inventar pretexto e irte", 6]] },
+      { p: "Tema de conversación que surge inevitablemente entre viejos amigos", a: [["Anécdotas vergonzosas", 40], ["Quién ya se casó o tuvo hijos", 25], ["Cómo les va en el trabajo", 18], ["Quejas de la edad adulta", 11], ["Recordar maestros odiados", 6]] }
+    ];
+
+    const curatedFastMoney = [
+      "Menciona una excusa para llegar tarde a primera clase",
+      "Algo que compras en la papelería a última hora",
+      "Un lugar de la uni donde la gente va a dormir",
+      "El pretexto ideal para pedirle dinero a tus papás",
+      "La comida más rápida para comer entre clases",
+      "Un objeto que siempre se pierde en el salón",
+      "La frase típica de un profesor cuando nadie participa",
+      "Algo que haces cuando apagan la luz para proyectar",
+      "El día de la semana que más se falta a clases",
+      "Algo que usas para mantenerte despierto estudiando",
+      "Algo que siempre olvidas traer a los exámenes",
+      "La materia que más reprobados tiene históricamente",
+      "Un ruido molesto durante un examen importante",
+      "Algo que siempre se descompone en las instalaciones",
+      "La primera aplicación que abres al despertar",
+      "Menciona algo que pides en la tiendita de la escuela",
+      "Menciona un deporte que se juega mucho en la escuela",
+      "Lo primero que buscas cuando llegas a tu casa",
+      "Una plataforma famosa para ver series y películas",
+      "Menciona una red social sumamente popular",
+      "Un género de música que siempre ponen en las fiestas",
+      "Menciona una marca famosa de ropa deportiva",
+      "Algo que haces cuando el profe no llega a clase",
+      "Menciona un sabor de papas fritas muy popular",
+      "Una frase que dices cuando no entiendes la clase",
+      "Menciona un súper héroe de los Vengadores",
+      "Algo que siempre traes en la mochila",
+      "Menciona algo que se te acaba a mitad de semestre",
+      "Menciona un superpoder que te gustaría tener",
+      "Un aparato electrónico que no falta en tu cuarto",
+      "Menciona una marca famosa de refresco",
+      "Un lugar a donde vas cuando te quieres ir de pinta",
+      "La excusa típica para salirte temprano del salón",
+      "Algo que te quita el sueño por la noche",
+      "Menciona un animal salvaje muy común en zoológicos",
+      "Un color de marcatextos que más se utiliza",
+      "Menciona una profesión muy bien pagada",
+      "El mes donde los estudiantes están más estresados",
+      "Algo indispensable que compras para entrar al cine",
+      "Un motivo por el cual repruebas una materia"
+    ];
+
+    const masterBank = curatedNormal.map((item, idx) => ({ id: idx, pregunta: item.p, respuestas: item.a.map(([text, points]) => ({ text, points, revealed: false })) }));
+
+    let unplayedRounds = masterBank.map((_, i) => i);
+    let unplayedFM = curatedFastMoney.map((_, i) => i);
+    
+    let currentRound = null;
+    let currentRoundNum = 0;
+    let roundPot = 0;
+    let teams = [{ name: "EQUIPO 1", score: 0, strikes: 0 }, { name: "EQUIPO 2", score: 0, strikes: 0 }];
+
+    function initRole(role) {
+      document.getElementById("role-selector").style.display = "none";
+      if (role === "projector") { 
+        document.getElementById("view-projector").style.display = "flex"; 
+      }
+      else { 
+        document.getElementById("view-admin").style.display = "block"; 
+        populateAdminSelect(); 
+        setupMirror();
+      }
+    }
+
+    // ==========================================
+    // MONITOR DE ESPEJO (PICTURE-IN-PICTURE)
+    // ==========================================
+    function setupMirror() {
+      const url = window.location.href.split('#')[0] + "#projector";
+      document.getElementById('mirror-frame-n').src = url;
+      document.getElementById('mirror-frame-fm').src = url;
+      
+      const scaleMirror = () => {
+        ['n', 'fm'].forEach(suffix => {
+          const container = document.getElementById(`mirror-container-${suffix}`);
+          const frame = document.getElementById(`mirror-frame-${suffix}`);
+          if(container && frame) {
+            const scale = container.clientWidth / 1920;
+            frame.style.transform = `scale(${scale})`;
+          }
+        });
+      };
+      window.addEventListener('resize', scaleMirror);
+      setTimeout(scaleMirror, 200);
+    }
+
+    let isRoundEnded = false;
+
+    function toggleEndRound() {
+      if (!currentRound) { alert("Carga una ronda primero."); return; }
+      isRoundEnded = !isRoundEnded;
+      updateEndRoundBtn();
+      renderAdminAnswers();
+    }
+
+    function updateEndRoundBtn() {
+      const btn = document.getElementById("btn-end-round");
+      if (!btn) return;
+      if (isRoundEnded) {
+        btn.innerText = "🏁 Fin Activo (Sin Pts)";
+        btn.style.background = "#e67e22";
+        btn.style.color = "#fff";
+      } else {
+        btn.innerText = "🏁 Fin de Ronda";
+        btn.style.background = "";
+        btn.style.color = "";
+      }
+    }
+
+    // ==========================================
+    // REINICIAR JUEGO
+    // ==========================================
+    function resetGame() {
+      if(confirm("¿Estás seguro de que deseas REINICIAR todo el juego?")) {
+        teams = [{ name: "EQUIPO 1", score: 0, strikes: 0 }, { name: "EQUIPO 2", score: 0, strikes: 0 }];
+        unplayedRounds = masterBank.map((_, i) => i);
+        unplayedFM = curatedFastMoney.map((_, i) => i);
+        currentRound = null; currentRoundNum = 0; roundPot = 0;
+        isRoundEnded = false; updateEndRoundBtn();
+        
+        document.getElementById("admin-t0-input").value = "EQUIPO 1";
+        document.getElementById("admin-t1-input").value = "EQUIPO 2";
+        updateTeamNames(); updateScoresUI();
+        
+        document.getElementById("admin-select").value = "";
+        document.getElementById("admin-q-title").innerText = "Selecciona una ronda...";
+        document.getElementById("admin-answers").innerHTML = "";
+        
+        document.getElementById('fm-setup-card').style.display = 'flex';
+        document.getElementById('fm-play-cards').style.display = 'none';
+        
+        switchAdminTab('normal');
+        channel.postMessage({ type: "RESET_GAME", payload: { teams } });
+        alert("¡Juego reiniciado correctamente!");
+      }
+    }
+
+    function switchAdminTab(tab) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById(`nav-${tab}`).classList.add('active');
+      if(tab === 'normal') {
+        document.getElementById('tab-normal').style.display = 'flex'; document.getElementById('tab-fm').style.display = 'none';
+        document.getElementById('admin-header-title').innerText = "Tablero Principal";
+        channel.postMessage({ type: "MODE_SET", payload: "normal" });
+      } else {
+        document.getElementById('tab-normal').style.display = 'none'; document.getElementById('tab-fm').style.display = 'flex';
+        document.getElementById('admin-header-title').innerText = "Ronda Jaguar";
+        channel.postMessage({ type: "MODE_SET", payload: "fastmoney" });
+      }
+    }
+
+    function populateAdminSelect() {
+      const select = document.getElementById("admin-select");
+      masterBank.forEach((q, i) => {
+        const opt = document.createElement("option");
+        opt.value = i; opt.innerText = `Opción ${i + 1}: ${q.pregunta}`;
+        select.appendChild(opt);
+      });
+      select.value = "";
+    }
+
+    function updateTeamNames() {
+      teams[0].name = (document.getElementById("admin-t0-input").value.trim() || "EQUIPO 1").toUpperCase();
+      teams[1].name = (document.getElementById("admin-t1-input").value.trim() || "EQUIPO 2").toUpperCase();
+      document.getElementById("btn-t0-name").innerText = teams[0].name; document.getElementById("btn-t1-name").innerText = teams[1].name;
+      document.getElementById("fm-btn-t0").innerText = teams[0].name; document.getElementById("fm-btn-t1").innerText = teams[1].name;
+      channel.postMessage({ type: "UPDATE_NAMES", payload: [teams[0].name, teams[1].name] });
+    }
+
+    function clearScore(teamIdx) { teams[teamIdx].score = 0; updateScoresUI(); syncScore(); }
+    function addTeamStrike(teamIdx) { teams[teamIdx].strikes = Math.min(3, teams[teamIdx].strikes + 1); syncScore(); }
+    function clearTeamStrike(teamIdx) { teams[teamIdx].strikes = Math.max(0, teams[teamIdx].strikes - 1); syncScore(); }
+    function updateScoresUI() { document.getElementById("admin-score-0").innerText = teams[0].score; document.getElementById("admin-score-1").innerText = teams[1].score; }
+    function syncScore() { channel.postMessage({ type: "UPDATE_SCORE", payload: { teams, pot: roundPot } }); }
+
+    function loadRound(idx) {
+      if(idx === "") return;
+      currentRound = JSON.parse(JSON.stringify(masterBank[idx]));
+      roundPot = 0; currentRoundNum++;
+      isRoundEnded = false; updateEndRoundBtn();
+      document.getElementById("admin-q-title").innerText = `RONDA ${currentRoundNum}: ${currentRound.pregunta}`;
+      renderAdminAnswers();
+      channel.postMessage({ type: "LOAD_ROUND", payload: { q: currentRound.pregunta, answers: currentRound.respuestas, pot: roundPot, roundNum: currentRoundNum } });
+    }
+
+    function loadRandom() {
+      if (unplayedRounds.length === 0) { alert("¡Se jugaron todas las preguntas normales!"); unplayedRounds = masterBank.map((_, i) => i); }
+      const randArrIndex = Math.floor(Math.random() * unplayedRounds.length);
+      const selectedQuestionIndex = unplayedRounds[randArrIndex];
+      unplayedRounds.splice(randArrIndex, 1);
+      document.getElementById("admin-select").value = selectedQuestionIndex;
+      loadRound(selectedQuestionIndex);
+    }
+
+    function renderAdminAnswers() {
+      const c = document.getElementById("admin-answers"); c.innerHTML = "";
+      if (!currentRound) return;
+      currentRound.respuestas.forEach((ans, idx) => {
+        const div = document.createElement("div"); div.className = "ans-row-admin";
+        let actionBtn = "";
+        if (ans.revealed) {
+          actionBtn = `<button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.8rem;" disabled>${ans.unscored ? 'Revelada (Sin Pts)' : 'Revelada'}</button>`;
+        } else if (isRoundEnded) {
+          actionBtn = `<button class="btn" style="padding: 6px 12px; font-size:0.8rem; background:#e67e22; color:#fff;" onclick="revealUnscored(${idx})">Revelar (Sin Pts)</button>`;
+        } else {
+          actionBtn = `<button class="btn btn-primary" style="padding: 6px 12px; font-size:0.8rem;" onclick="reveal(${idx})">Revelar</button>`;
+        }
+
+        div.innerHTML = `<span><b>#${idx + 1}</b> &mdash; ${ans.text} <span style="color:var(--gold); font-weight:bold;">(${ans.points})</span></span> ${actionBtn}`;
+        c.appendChild(div);
+      });
+
+      if (isRoundEnded) {
+        const hasUnrevealed = currentRound.respuestas.some(a => !a.revealed);
+        if (hasUnrevealed) {
+          const bulkDiv = document.createElement("div");
+          bulkDiv.style.marginTop = "6px";
+          bulkDiv.innerHTML = `<button class="btn" style="width:100%; padding:8px 12px; font-size:0.85rem; background:#d35400; color:#fff;" onclick="revealAllUnscored()">👁 Revelar Todo lo Faltante (Sin Pts)</button>`;
+          c.appendChild(bulkDiv);
+        }
+      }
+    }
+
+    function reveal(idx) {
+      if (currentRound.respuestas[idx].revealed) return;
+      currentRound.respuestas[idx].revealed = true; roundPot += currentRound.respuestas[idx].points;
+      renderAdminAnswers();
+      channel.postMessage({ type: "REVEAL_ANSWER", payload: { idx, text: currentRound.respuestas[idx].text, points: currentRound.respuestas[idx].points, pot: roundPot } });
+    }
+
+    function revealUnscored(idx) {
+      if (!currentRound || currentRound.respuestas[idx].revealed) return;
+      currentRound.respuestas[idx].revealed = true;
+      currentRound.respuestas[idx].unscored = true;
+      renderAdminAnswers();
+      channel.postMessage({
+        type: "REVEAL_UNSCORED",
+        payload: {
+          idx,
+          text: currentRound.respuestas[idx].text,
+          pot: roundPot
+        }
+      });
+    }
+
+    function revealAllUnscored() {
+      if (!currentRound) return;
+      currentRound.respuestas.forEach((ans, idx) => {
+        if (!ans.revealed) {
+          setTimeout(() => revealUnscored(idx), idx * 250);
+        }
+      });
+    }
+
+    function sendStrikes(count) { channel.postMessage({ type: "STRIKE", payload: count }); }
+    function assignPoints(teamIdx) {
+      if(roundPot === 0) { alert("No hay puntos para transferir."); return; }
+      teams[teamIdx].score += roundPot; roundPot = 0; updateScoresUI(); syncScore();
+      isRoundEnded = false; updateEndRoundBtn();
+      document.getElementById("admin-q-title").innerText = "¡Puntos transferidos! Carga otra ronda...";
+      document.getElementById("admin-answers").innerHTML = "";
+      channel.postMessage({ type: "CLEAR_BOARD" });
+    }
+
+    // ==========================================
+    // LÓGICA MODO DINERO RÁPIDO EXACTO AL DOBLE 
+    // ==========================================
+    let fmQuestionsStr = []; let fmPrecalcPoints = [];
+    
+    function initFastMoney(teamIdx) {
+      let score = teams[teamIdx].score;
+      if (score < 50) score = 50; 
+      let targetDistribute = score; 
+
+      let p = [0.35, 0.25, 0.20, 0.15, 0.05];
+      fmPrecalcPoints = p.map(frac => Math.round((targetDistribute * frac) / 5) * 5);
+      let sum4 = fmPrecalcPoints[0] + fmPrecalcPoints[1] + fmPrecalcPoints[2] + fmPrecalcPoints[3];
+      fmPrecalcPoints[4] = targetDistribute - sum4; 
+      fmPrecalcPoints.sort(() => Math.random() - 0.5);
+
+      fmQuestionsStr = [];
+      if(unplayedFM.length < 5) unplayedFM = curatedFastMoney.map((_, i) => i);
+      
+      for(let i=0; i<5; i++) {
+        let r = Math.floor(Math.random() * unplayedFM.length);
+        fmQuestionsStr.push(curatedFastMoney[unplayedFM[r]]);
+        unplayedFM.splice(r, 1);
+      }
+
+      document.getElementById('fm-setup-card').style.display = 'none';
+      document.getElementById('fm-play-cards').style.display = 'flex';
+
+      let htmlP1 = '', htmlP2 = '';
+      fmQuestionsStr.forEach((qStr, i) => {
+        let rowHtml = (player) => `
+          <div class="fm-question-label">Q${i+1}: ${qStr} <span style="color:var(--gold);">(Vale ${fmPrecalcPoints[i]} pts)</span></div>
+          <div class="fm-row">
+            <input type="text" id="fm-txt-p${player}-${i}" placeholder="Escribe respuesta..." autocomplete="off">
+            <select id="fm-res-p${player}-${i}"><option value="1">✅</option><option value="0">❌</option></select>
+            <button class="btn btn-secondary" style="padding:8px 12px;" onclick="fmRevTxt(${player}, ${i})">Txt</button>
+            <button class="btn btn-success" style="padding:8px 12px; color:#000;" onclick="fmRevPts(${player}, ${i})">Pts</button>
+          </div>`;
+        htmlP1 += rowHtml(1); htmlP2 += rowHtml(2);
+      });
+      document.getElementById('admin-fm-p1').innerHTML = htmlP1;
+      document.getElementById('admin-fm-p2').innerHTML = htmlP2;
+
+      channel.postMessage({ type: "FM_INIT" });
+    }
+
+    function startFMTimer(seconds) { channel.postMessage({ type: "FM_TIMER", payload: seconds }); }
+    function stopFMTimer() { channel.postMessage({ type: "FM_TIMER_STOP" }); }
+    function buzzFMTimer() { channel.postMessage({ type: "FM_TIMER_BUZZ" }); }
+
+    function fmRevTxt(player, idx) {
+      let text = document.getElementById(`fm-txt-p${player}-${idx}`).value.toUpperCase() || "------";
+      channel.postMessage({ type: "FM_REVEAL_TXT", payload: { idx: (player === 1) ? idx : idx + 5, text: text } });
+    }
+
+    function fmRevPts(player, idx) {
+      let pts = document.getElementById(`fm-res-p${player}-${idx}`).value === "1" ? fmPrecalcPoints[idx] : 0;
+      channel.postMessage({ type: "FM_REVEAL_PTS", payload: { idx: (player === 1) ? idx : idx + 5, pts: pts } });
+    }
+
+    function hideFMBoard() { channel.postMessage({ type: "FM_HIDE_P1" }); }
+    function showFMBoard() { channel.postMessage({ type: "FM_SHOW_P1" }); }
+
+    // ==========================================
+    // LÓGICA PANTALLA PROYECTOR (RECEPTOR)
+    // ==========================================
+    let fmTime = 0, fmInt = null, fmTotalScore = 0;
+
+    channel.onmessage = (e) => {
+      const { type, payload } = e.data;
+      if (type === "RESET_GAME") {
+        document.getElementById("proj-t0-name").innerText = payload.teams[0].name; document.getElementById("proj-t1-name").innerText = payload.teams[1].name;
+        document.getElementById("proj-p0").innerText = "0"; document.getElementById("proj-p1").innerText = "0";
+        document.getElementById("proj-s0").innerText = ""; document.getElementById("proj-s1").innerText = "";
+        document.getElementById("proj-pot").innerText = "0"; document.getElementById("proj-round-num").innerText = "LISTOS";
+        document.getElementById("proj-question").innerText = "¡BIENVENIDOS AL JUEGO!";
+        document.getElementById("proj-board").innerHTML = ""; document.getElementById("proj-fm-board").innerHTML = "";
+        document.getElementById("fm-proj-total").innerText = "0"; document.getElementById("fm-proj-timer").innerText = "25";
+      }
+      if (type === "MODE_SET") {
+        document.getElementById("view-projector").style.display = payload === "normal" ? "flex" : "none";
+        document.getElementById("view-projector-fm").style.display = payload === "normal" ? "none" : "flex";
+      }
+      if (type === "UPDATE_NAMES") {
+        document.getElementById("proj-t0-name").innerText = payload[0]; document.getElementById("proj-t1-name").innerText = payload[1];
+      }
+      if (type === "LOAD_ROUND") {
+        document.getElementById("proj-round-num").innerText = `RONDA ${payload.roundNum}`;
+        document.getElementById("proj-question").innerText = payload.q; document.getElementById("proj-pot").innerText = payload.pot;
+        renderProjectorBoard(payload.answers);
+      }
+      if (type === "REVEAL_ANSWER") {
+        soundSuccess(); 
+        triggerConfetti(); // SOLO AL REVELAR RESPUESTA CORRECTA
+        const flipper = document.getElementById(`slot-${payload.idx}`);
+        if (flipper) {
+          document.getElementById(`slot-text-${payload.idx}`).innerText = payload.text;
+          document.getElementById(`slot-pts-${payload.idx}`).innerText = payload.points;
+          flipper.classList.add("flipped");
+        }
+        document.getElementById("proj-pot").innerText = payload.pot;
+      }
+      if (type === "REVEAL_UNSCORED") {
+        soundTick();
+        const flipper = document.getElementById(`slot-${payload.idx}`);
+        if (flipper) {
+          document.getElementById(`slot-text-${payload.idx}`).innerText = payload.text;
+          document.getElementById(`slot-pts-${payload.idx}`).innerText = "";
+          flipper.classList.add("flipped");
+        }
+        document.getElementById("proj-pot").innerText = payload.pot;
+      }
+      if (type === "CLEAR_BOARD") {
+        document.getElementById("proj-round-num").innerText = "SIGUIENTE";
+        document.getElementById("proj-question").innerText = "¡PREPARADOS!"; document.getElementById("proj-board").innerHTML = "";
+      }
+      if (type === "STRIKE" || type === "FM_TIMER_BUZZ") {
+        soundWrong(); const box = document.getElementById("strike-container"); box.innerHTML = "";
+        for (let i = 0; i < (type === "STRIKE" ? payload : 1); i++) {
+          const x = document.createElement("div"); x.className = "strike-x"; x.innerText = "X"; box.appendChild(x);
+        }
+        const modal = document.getElementById("proj-strikes");
+        modal.style.display = "flex"; setTimeout(() => modal.style.display = "none", 1500);
+      }
+      if (type === "UPDATE_SCORE") {
+        document.getElementById("proj-p0").innerText = payload.teams[0].score; document.getElementById("proj-p1").innerText = payload.teams[1].score;
+        document.getElementById("proj-s0").innerText = "X".repeat(payload.teams[0].strikes); document.getElementById("proj-s1").innerText = "X".repeat(payload.teams[1].strikes);
+        document.getElementById("proj-pot").innerText = payload.pot;
+        // CONFETI REMOVIDO DE AQUÍ
+      }
+      if (type === "FM_INIT") {
+        renderFMBoard(); fmTotalScore = 0; document.getElementById("fm-proj-total").innerText = "0"; document.getElementById("fm-proj-timer").innerText = "25";
+      }
+      if (type === "FM_TIMER") {
+        clearInterval(fmInt); fmTime = payload; document.getElementById("fm-proj-timer").innerText = fmTime;
+        fmInt = setInterval(() => {
+          fmTime--; document.getElementById("fm-proj-timer").innerText = fmTime;
+          if(fmTime <= 0) {
+            clearInterval(fmInt); soundWrong(); const modal = document.getElementById("proj-strikes");
+            document.getElementById("strike-container").innerHTML = "<div class='strike-x'>X</div>";
+            modal.style.display = "flex"; setTimeout(() => modal.style.display = "none", 1500);
+          } else { soundTick(); }
+        }, 1000);
+      }
+      if (type === "FM_TIMER_STOP") { clearInterval(fmInt); }
+      if (type === "FM_REVEAL_TXT") {
+        soundSuccess(); document.getElementById(`fm-text-${payload.idx}`).innerText = payload.text;
+        document.getElementById(`fm-pts-${payload.idx}`).innerText = "--"; document.getElementById(`fm-slot-${payload.idx}`).classList.add("flipped");
+      }
+      if (type === "FM_REVEAL_PTS") {
+        const pts = parseInt(payload.pts) || 0; document.getElementById(`fm-pts-${payload.idx}`).innerText = pts;
+        fmTotalScore += pts; document.getElementById("fm-proj-total").innerText = fmTotalScore;
+        if (pts === 0) soundWrong(); 
+        else { soundSuccess(); triggerConfetti(); } // SOLO AL REVELAR PUNTOS CORRECTOS
+      }
+      if (type === "FM_HIDE_P1") { for(let i=0; i<5; i++) document.getElementById(`fm-slot-${i}`).classList.remove("flipped"); }
+      if (type === "FM_SHOW_P1") {
+        for(let i=0; i<5; i++) { if(document.getElementById(`fm-text-${i}`).innerText !== "") document.getElementById(`fm-slot-${i}`).classList.add("flipped"); }
+      }
+    };
+
+    function renderProjectorBoard(answers) {
+      const b = document.getElementById("proj-board"); b.innerHTML = "";
+      answers.forEach((ans, i) => {
+        b.innerHTML += `<div class="card-scene"><div class="card-flipper" id="slot-${i}">
+          <div class="card-front"><div class="card-number">${i + 1}</div></div>
+          <div class="card-back"><span id="slot-text-${i}"></span><div class="card-points" id="slot-pts-${i}"></div></div>
+        </div></div>`;
+      });
+    }
+
+    function renderFMBoard() {
+      const b = document.getElementById("proj-fm-board"); b.innerHTML = "";
+      for(let i=0; i<10; i++) {
+        b.innerHTML += `<div class="card-scene" style="height:70px;"><div class="card-flipper" id="fm-slot-${i}">
+          <div class="card-front"><span style="color:transparent;">--</span></div>
+          <div class="card-back"><span id="fm-text-${i}"></span><div class="card-points" id="fm-pts-${i}">--</div></div>
+        </div></div>`;
+      }
+    }
+  </script>
+</body>
+</html>
